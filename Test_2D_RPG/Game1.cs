@@ -1,8 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 
 namespace Test_2D_RPG
 {
@@ -10,7 +8,8 @@ namespace Test_2D_RPG
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-        private Texture2D playerSheet; //Ein Feld von Typ "Texture2D" anlegen für den Spieler Sprite
+        private Texture2D _playerSheet;
+        private Player _player;
 
         public Game1()
         {
@@ -21,41 +20,30 @@ namespace Test_2D_RPG
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            playerSheet = Content.Load<Texture2D>("Player/Player"); //Das Playersheet als Content laden
-
-            // TODO: use this.Content to load your game content here
+            _playerSheet = Content.Load<Texture2D>("Player/Player");
+            _player = new Player(_playerSheet, new Vector2(100, 100));
         }
 
         protected override void Update(GameTime gameTime)
         {
-            if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
-                Exit();
+            if (Keyboard.GetState().IsKeyDown(Keys.Escape)) Exit();
 
-            // TODO: Add your update logic here
-
+            _player.Update(gameTime);
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            Rectangle sourceIdle1 = new Rectangle (0, 0, 32, 32);
-            Rectangle destination = new Rectangle (100, 100, 32, 32);
             GraphicsDevice.Clear(Color.Orange);
             _spriteBatch.Begin();
-            _spriteBatch.Draw(playerSheet, destination, sourceIdle1, Color.White);
+            _player.Draw(_spriteBatch);
             _spriteBatch.End();
-
-
-            // TODO: Add your drawing code here
-
             base.Draw(gameTime);
         }
     }
