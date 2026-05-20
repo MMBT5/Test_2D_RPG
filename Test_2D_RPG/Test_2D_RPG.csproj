@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
@@ -11,8 +11,22 @@
     <ApplicationIcon>Icon.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Remove="MapLoader.cs" />
+    <Compile Remove="MapManager.cs" />
+    <Compile Remove="Tileset.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Content.mgcb" />
+    <None Remove="Content\Content.mgcb" />
     <None Remove="Icon.ico" />
     <None Remove="Icon.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Content\.idea\encodings.xml" />
+    <Content Include="Content\.idea\indexLayout.xml" />
+    <Content Include="Content\.idea\projectSettingsUpdater.xml" />
+    <Content Include="Content\.idea\vcs.xml" />
+    <Content Include="Content\.idea\workspace.xml" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Icon.ico">
@@ -21,6 +35,14 @@
     <EmbeddedResource Include="Icon.bmp">
       <LogicalName>Icon.bmp</LogicalName>
     </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <MonoGameContentReference Include="Content\Content.mgcb">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </MonoGameContentReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Content\.idea\.gitignore" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.*" />
