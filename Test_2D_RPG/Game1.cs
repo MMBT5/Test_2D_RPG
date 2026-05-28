@@ -142,9 +142,9 @@ namespace Test_2D_RPG
                 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile  3 } (später
                 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile  4 }  Schlüssel)
                 { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Zeile  5: vollständige Wand oben
-                { 0,0,0,0,0,4,5,0,0,0,0,0,0,0,0,0 }, // Zeile  6: GAP – Wasser Sp.5, Block Sp.6
-                { 0,0,0,0,0,4,5,0,0,0,0,0,0,0,0,0 }, // Zeile  7: GAP – Wasser Sp.5, Block Sp.6
-                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Zeile  8: vollständige Wand unten
+                { 1,0,0,0,0,4,0,0,5,0,0,0,0,0,0,0 }, // Zeile  6: GAP – Wasser Sp.5, Block Sp.6
+                { 1,0,0,0,0,4,0,0,5,0,0,0,0,0,0,0 }, // Zeile  7: GAP – Wasser Sp.5, Block Sp.6
+                { 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3 }, // Zeile  8: vollständige Wand unten
                 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile  9
                 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile 10
                 { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile 11
