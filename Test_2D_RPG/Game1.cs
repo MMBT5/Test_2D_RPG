@@ -1,4 +1,4 @@
-﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
@@ -10,6 +10,10 @@ namespace Test_2D_RPG
         private SpriteBatch spriteBatch;
         private Player player;
         private Map currentMap;
+        private Map map5; // Referenz auf Map 5 fuer Ziel-Pruefung
+
+        private bool gameWon = false;
+        private Texture2D winOverlay;
 
         public Game1()
         {
@@ -20,7 +24,7 @@ namespace Test_2D_RPG
 
         protected override void Initialize()
         {
-            graphics.PreferredBackBufferWidth = 512;
+            graphics.PreferredBackBufferWidth  = 512;
             graphics.PreferredBackBufferHeight = 512;
             graphics.ApplyChanges();
             base.Initialize();
@@ -30,199 +34,222 @@ namespace Test_2D_RPG
         {
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // ── Texturen laden ───────────────────────────────────────
+            // Texturen laden
             Texture2D grass = Content.Load<Texture2D>("Tiles/Grass_Middle");
-            Texture2D path = Content.Load<Texture2D>("Tiles/Path_Middle");
-            Texture2D tree = Content.Load<Texture2D>("Outdoor decoration/Oak_Tree");
+            Texture2D path  = Content.Load<Texture2D>("Tiles/Path_Middle");
+            Texture2D tree  = Content.Load<Texture2D>("Outdoor decoration/Oak_Tree");
             Texture2D water = Content.Load<Texture2D>("Tiles/Water_Middle");
 
-            // Holzblock – Platzhalter (braune Farbe), austauschbar mit echtem Sprite:
-            // Content.Load<Texture2D>("Tiles/Wood_Block")
+            // Holzblock: braune Farbe (austauschbar mit echtem Sprite)
             Texture2D woodBlock = new Texture2D(GraphicsDevice, 1, 1);
             woodBlock.SetData(new Color[] { new Color(139, 90, 43) });
 
-            // Versunkener Block – Platzhalter (blau-grün), austauschbar:
-            // Content.Load<Texture2D>("Tiles/Sunken_Block")
+            // Versunkener Block: blaugruen
             Texture2D sunkenBlock = new Texture2D(GraphicsDevice, 1, 1);
             sunkenBlock.SetData(new Color[] { new Color(60, 110, 100) });
 
-            // ── Map-Daten ────────────────────────────────────────────
-            // Legende:
-            //   0 = Gras       (betretbar)
-            //   1 = Baum       (hinter Spieler, blockiert)
-            //   2 = Weg        (betretbar)
-            //   3 = Baum       (vor Spieler, blockiert)
-            //   4 = Wasser     (blockiert)
-            //   5 = Holzblock  (schiebbar, blockiert)
-            //   6 = Versunken  (Block im Wasser, betretbar)
+            // Ziel-Tile: gold
+            Texture2D goalTile = new Texture2D(GraphicsDevice, 1, 1);
+            goalTile.SetData(new Color[] { new Color(255, 200, 0) });
 
-            // ── Map 1 – Zentrum ──────────────────────────────────────
-            // Ausgänge: Nord (Zeile 0, Spalten 7-8)
-            //           Ost  (Zeilen 13-14, Spalte 15)
-            //           Süd  (Zeile 15, Spalten 7-8)
-            //           West (Zeilen 6-7, Spalte 0)
+            // Gewonnen-Overlay: transparent gold
+            winOverlay = new Texture2D(GraphicsDevice, 1, 1);
+            winOverlay.SetData(new Color[] { Color.White });
+
+            // ═══════════════════════════════════════════════════
+            // MAP 1 – ZENTRUM
+            // Raetsel: 1 Block (Typ 5) bei (3,11), Wasser (Typ 4) bei (3,12)
+            // Loesung:  Block nach OSTEN schieben -> landet im Wasser -> Typ 6
+            // Raetsel-Bereich: oben-rechts, eingerahmt durch Baeume
+            // Ausgaenge: Nord (Zeile 0, Sp.7-8), Ost (Z.13-14, Sp.15),
+            //            Sued (Zeile 15, Sp.7-8), West (Z.6-7, Sp.0)
+            // ═══════════════════════════════════════════════════
             int[,] map1Data = new int[,]
             {
-                { 1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1 }, // Zeile  0: Nord-Ausgang Sp.7-8
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile  1
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile  2
-                { 1,0,0,0,0,0,0,0,2,2,2,2,0,0,0,1 }, // Zeile  3
-                { 1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,1 }, // Zeile  4
-                { 1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,1 }, // Zeile  5
-                { 0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,1 }, // Zeile  6: West-Ausgang Sp.0
-                { 0,0,0,0,2,2,2,2,2,0,0,0,0,0,0,1 }, // Zeile  7: West-Ausgang Sp.0
-                { 1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,1 }, // Zeile  8
-                { 1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,1 }, // Zeile  9
-                { 1,0,0,0,0,0,0,0,2,0,0,0,0,0,0,1 }, // Zeile 10
-                { 1,0,0,0,0,0,0,0,2,2,2,2,2,2,0,1 }, // Zeile 11
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,2,0,1 }, // Zeile 12
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2 }, // Zeile 13: Ost-Ausgang
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }, // Zeile 14: Ost-Ausgang
-                { 1,3,3,3,3,3,3,0,0,3,3,3,3,3,3,3 }, // Zeile 15: Süd-Ausgang Sp.7-8
+                { 1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1 }, // Z  0: Nord-Ausgang Sp.7-8
+                { 1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1 }, // Z  1
+                { 1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1 }, // Z  2: Raetsel-Bereich oben
+                { 1,0,0,0,0,0,0,0,0,1,0,5,4,0,0,1 }, // Z  3: Block(11), Wasser(12)
+                { 1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1 }, // Z  4: Raetsel-Bereich unten
+                { 1,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1 }, // Z  5
+                { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  6: West-Ausgang Sp.0
+                { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  7: West-Ausgang Sp.0
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  8
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  9
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 10
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 11
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 12
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2 }, // Z 13: Ost-Ausgang Sp.15
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 }, // Z 14: Ost-Ausgang Sp.15
+                { 1,3,3,3,3,3,3,0,0,3,3,3,3,3,3,3 }, // Z 15: Sued-Ausgang Sp.7-8
             };
 
-            // ── Map 2 – Osten ─────────────────────────────────────────
-            // Ausgang: West (Zeilen 13-14, Spalte 0)
+            // ═══════════════════════════════════════════════════
+            // MAP 2 – OSTEN
+            // Raetsel: 2 Bloecke (Z.6, Sp.5 und 6), Wasser (Z.5, Sp.5 und 6)
+            // Loesung:  Beide Bloecke nach NORDEN schieben
+            // Raetsel-Bereich: linke Mitte
+            // Ausgang: West (Z.13-14, Sp.0)
+            // ═══════════════════════════════════════════════════
             int[,] map2Data = new int[,]
             {
-                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // West-Ausgang
-                { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // West-Ausgang
-                { 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3 },
+                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Z  0
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  1
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  2
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  3
+                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Z  4: Wand oben Raetsel
+                { 1,0,0,0,0,4,4,0,0,0,0,0,0,0,0,1 }, // Z  5: Wasser Sp.5+6
+                { 1,0,0,0,0,5,5,0,0,0,0,0,0,0,0,1 }, // Z  6: Bloecke Sp.5+6
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  7: Spieler schiebt von hier
+                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Z  8: Wand unten Raetsel
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  9
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 10
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 11
+                { 3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 12
+                { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 13: West-Ausgang
+                { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 14: West-Ausgang
+                { 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3 }, // Z 15
             };
 
-            // ── Map 3 – Norden ────────────────────────────────────────
-            // Ausgang: Süd (Zeile 15, Spalten 7-8) → verbindet mit Map1 Nord
+            // ═══════════════════════════════════════════════════
+            // MAP 3 – NORDEN
+            // Raetsel: 2 Bloecke (Z.8, Sp.6 und 7), Wasser (Z.7, Sp.6 und 7)
+            // Loesung:  Beide Bloecke nach NORDEN schieben
+            // Raetsel-Bereich: untere Mitte (nahe Sued-Ausgang)
+            // Ausgang: Sued (Z.15, Sp.7-8)
+            // ═══════════════════════════════════════════════════
             int[,] map3Data = new int[,]
             {
-                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1 }, // Deko-Bäume
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1 }, // Deko-Bäume
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,3,3,3,3,3,3,0,0,3,3,3,3,3,3,3 }, // Zeile 15: Süd-Ausgang Sp.7-8
+                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Z  0
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  1
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  2
+                { 1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1 }, // Z  3: Deko-Baeume
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  4
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  5
+                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Z  6: Wand oben Raetsel
+                { 1,0,0,0,0,0,4,4,0,0,0,0,0,0,0,1 }, // Z  7: Wasser Sp.6+7
+                { 1,0,0,0,0,0,5,5,0,0,0,0,0,0,0,1 }, // Z  8: Bloecke Sp.6+7
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  9: Spieler schiebt von hier
+                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Z 10: Wand unten Raetsel
+                { 1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1 }, // Z 11: Deko-Baeume
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 12
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 13
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 14
+                { 1,3,3,3,3,3,3,0,0,3,3,3,3,3,3,3 }, // Z 15: Sued-Ausgang Sp.7-8
             };
 
-            // ── Map 4 – Westen (Schiebe-Rätsel) ──────────────────────
-            // Ausgang: Ost (Zeilen 6-7, Spalte 15) → verbindet mit Map1 West
-            //
-            // Rätsel: Wasser bei Spalte 5, Zeilen 6-7 blockiert den Weg.
-            // Holzblöcke (5) bei Spalte 6, Zeilen 6-7.
-            // Spieler schiebt Blöcke nach links → Block landet im Wasser
-            // → wird zu Typ 6 (versunken, betretbar) → Weg zur Westseite frei.
-            //
-            // Komplette Wand bei Zeile 5 und 8 → kein Umgehen möglich.
+            // ═══════════════════════════════════════════════════
+            // MAP 4 – WESTEN
+            // Raetsel: 2 Bloecke (Z.6-7, Sp.6), Wasser (Z.6-7, Sp.5)
+            // Loesung:  Beide Bloecke nach WESTEN schieben
+            // Sperrt geheimen Westbereich (Sp.0-4): dort kann spaeter Schluessel liegen
+            // Ausgang: Ost (Z.6-7, Sp.15)
+            // ═══════════════════════════════════════════════════
             int[,] map4Data = new int[,]
             {
-                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Zeile  0
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile  1 } geheime
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile  2 } Westseite
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile  3 } (später
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile  4 }  Schlüssel)
-                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Zeile  5: vollständige Wand oben
-                { 1,0,0,0,0,4,0,0,5,0,0,0,0,0,0,0 }, // Zeile  6: GAP – Wasser Sp.5, Block Sp.6
-                { 1,0,0,0,0,4,0,0,5,0,0,0,0,0,0,0 }, // Zeile  7: GAP – Wasser Sp.5, Block Sp.6
-                { 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3 }, // Zeile  8: vollständige Wand unten
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile  9
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile 10
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile 11
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile 12
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile 13
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Zeile 14
-                { 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3 }, // Zeile 15
+                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Z  0
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  1
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  2
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  3
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  4
+                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Z  5: Wand oben Raetsel
+                { 0,0,0,0,0,4,5,0,0,0,0,0,0,0,0,0 }, // Z  6: Wasser(5) Block(6)
+                { 0,0,0,0,0,4,5,0,0,0,0,0,0,0,0,0 }, // Z  7: Wasser(5) Block(6)
+                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Z  8: Wand unten Raetsel
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  9
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 10
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 11
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 12
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 13
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 14
+                { 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3 }, // Z 15
             };
 
-            // ── Map 5 – Süden ─────────────────────────────────────────
-            // Ausgang: Nord (Zeile 0, Spalten 7-8) → verbindet mit Map1 Süd
+            // ═══════════════════════════════════════════════════
+            // MAP 5 – SUEDEN (FINAL)
+            // Raetsel: 3 Bloecke (Z.4, Sp.6-8), Wasser (Z.3, Sp.6-8)
+            // Loesung:  Alle 3 Bloecke nach NORDEN schieben (in beliebiger Reihenfolge)
+            //           -> Weg zu Ziel-Tile (Z.1, Sp.7) wird frei
+            // Ausgang: Nord (Z.0, Sp.7-8)
+            // Ziel (Typ 7): Zeile 1, Spalte 7 (hinter dem Raesel-Kanal)
+            // ═══════════════════════════════════════════════════
             int[,] map5Data = new int[,]
             {
-                { 1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1 }, // Zeile  0: Nord-Ausgang Sp.7-8
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1 }, // Deko-Bäume
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Süd-Wand geschlossen
+                { 1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1 }, // Z  0: Nord-Ausgang Sp.7-8
+                { 1,1,1,1,1,1,0,7,0,0,1,1,1,1,1,1 }, // Z  1: ZIEL bei Sp.7 (Typ 7=Gold)
+                { 1,1,1,1,1,1,0,0,0,0,1,1,1,1,1,1 }, // Z  2: Korridor hinter Raetsel
+                { 1,1,1,1,1,1,4,4,4,1,1,1,1,1,1,1 }, // Z  3: Wasser Sp.6-8 (Raetsel-Kanal)
+                { 1,1,1,1,1,1,5,5,5,1,1,1,1,1,1,1 }, // Z  4: Bloecke Sp.6-8 (schiebbar)
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  5: Spielerbereich (schiebt von hier)
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  6
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  7
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  8
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z  9
+                { 1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1 }, // Z 10: Deko-Baeume
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 11
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 12
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 13
+                { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 }, // Z 14
+                { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }, // Z 15: Sued-Wand
             };
 
-            // ── Maps erstellen ───────────────────────────────────────
-            Map map1 = new Map(map1Data, grass, path, tree, water, woodBlock, sunkenBlock);
-            Map map2 = new Map(map2Data, grass, path, tree, water, woodBlock, sunkenBlock);
-            Map map3 = new Map(map3Data, grass, path, tree, water, woodBlock, sunkenBlock);
-            Map map4 = new Map(map4Data, grass, path, tree, water, woodBlock, sunkenBlock);
-            Map map5 = new Map(map5Data, grass, path, tree, water, woodBlock, sunkenBlock);
+            Map map1 = new Map(map1Data, grass, path, tree, water, woodBlock, sunkenBlock, goalTile);
+            Map map2 = new Map(map2Data, grass, path, tree, water, woodBlock, sunkenBlock, goalTile);
+            Map map3 = new Map(map3Data, grass, path, tree, water, woodBlock, sunkenBlock, goalTile);
+            Map map4 = new Map(map4Data, grass, path, tree, water, woodBlock, sunkenBlock, goalTile);
+            map5      = new Map(map5Data, grass, path, tree, water, woodBlock, sunkenBlock, goalTile);
 
-            // ── Verbindungen setzen ──────────────────────────────────
-            map1.East = map2; map2.West = map1;
+            map1.East  = map2; map2.West  = map1;
             map1.North = map3; map3.South = map1;
-            map1.West = map4; map4.East = map1;
+            map1.West  = map4; map4.East  = map1;
             map1.South = map5; map5.North = map1;
 
             currentMap = map1;
 
-            // ── Spieler ──────────────────────────────────────────────
             Texture2D playerSheet = Content.Load<Texture2D>("Player/Player");
-            player = new Player(playerSheet, new Vector2(64, 224)); // Mitte links
+            player = new Player(playerSheet, new Vector2(64, 224));
         }
 
         protected override void Update(GameTime gameTime)
         {
             if (Keyboard.GetState().IsKeyDown(Keys.Escape)) Exit();
 
-            player.Update(gameTime, currentMap);
+            if (!gameWon)
+            {
+                player.Update(gameTime, currentMap);
 
-            int screenSize = Map.Columns * Map.TileSize; // 512
+                int screenSize = Map.Columns * Map.TileSize; // 512
 
-            if (player.Position.X + 32 > screenSize && currentMap.East != null)
-            {
-                currentMap = currentMap.East;
-                player.Position = new Vector2(1, player.Position.Y);
-            }
-            else if (player.Position.X < 0 && currentMap.West != null)
-            {
-                currentMap = currentMap.West;
-                player.Position = new Vector2(screenSize - 33, player.Position.Y);
-            }
-            else if (player.Position.Y + 32 > screenSize && currentMap.South != null)
-            {
-                currentMap = currentMap.South;
-                player.Position = new Vector2(player.Position.X, 1);
-            }
-            else if (player.Position.Y < 0 && currentMap.North != null)
-            {
-                currentMap = currentMap.North;
-                player.Position = new Vector2(player.Position.X, screenSize - 33);
+                if (player.Position.X + 32 > screenSize && currentMap.East != null)
+                {
+                    currentMap = currentMap.East;
+                    player.Position = new Vector2(1, player.Position.Y);
+                }
+                else if (player.Position.X < 0 && currentMap.West != null)
+                {
+                    currentMap = currentMap.West;
+                    player.Position = new Vector2(screenSize - 33, player.Position.Y);
+                }
+                else if (player.Position.Y + 32 > screenSize && currentMap.South != null)
+                {
+                    currentMap = currentMap.South;
+                    player.Position = new Vector2(player.Position.X, 1);
+                }
+                else if (player.Position.Y < 0 && currentMap.North != null)
+                {
+                    currentMap = currentMap.North;
+                    player.Position = new Vector2(player.Position.X, screenSize - 33);
+                }
+
+                // Ziel-Erkennung: nur auf Map 5 pruefen
+                if (currentMap == map5)
+                {
+                    // Tile unter der Hitbox-Mitte des Spielers
+                    int tileCol = (int)((player.Position.X + 16) / Map.TileSize);
+                    int tileRow = (int)((player.Position.Y + 28) / Map.TileSize);
+                    if (currentMap.GetTile(tileCol, tileRow) == 7)
+                        gameWon = true;
+                }
             }
 
             base.Update(gameTime);
@@ -237,6 +264,14 @@ namespace Test_2D_RPG
             currentMap.DrawTrees(spriteBatch);
             player.Draw(spriteBatch);
             currentMap.DrawTreesUnten(spriteBatch);
+
+            // Gewonnen-Overlay: goldener Bildschirm-Flash
+            if (gameWon)
+            {
+                spriteBatch.Draw(winOverlay,
+                    new Rectangle(0, 0, 512, 512),
+                    Color.Gold * 0.55f);
+            }
 
             spriteBatch.End();
             base.Draw(gameTime);
