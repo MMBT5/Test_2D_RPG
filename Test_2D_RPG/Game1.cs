@@ -6,28 +6,29 @@ namespace Test_2D_RPG
 {
     public class Game1 : Game
     {
-        private GraphicsDeviceManager graphics;
+        private GraphicsDeviceManager grafik;
         private SpriteBatch spriteBatch;
-        private Player player;
-        private Map currentMap;
+        private Player spieler;
+        private Map aktuelleMap;
 
         private Map map1, map2, map3, map4, map5;
-        private bool[] switchActivated = new bool[4];
-        private bool gameWon = false;
-        private Texture2D winOverlay;
+        private bool[] schalterAktiv = new bool[4];
+        private bool gewonnen = false;
+        private Texture2D gewonnenBild;
 
         public Game1()
         {
-            graphics = new GraphicsDeviceManager(this);
+            grafik = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
         }
 
         protected override void Initialize()
         {
-            graphics.PreferredBackBufferWidth  = 512;
-            graphics.PreferredBackBufferHeight = 512;
-            graphics.ApplyChanges();
+            // Fenstergröße setzen
+            grafik.PreferredBackBufferWidth  = 512;
+            grafik.PreferredBackBufferHeight = 512;
+            grafik.ApplyChanges();
             base.Initialize();
         }
 
@@ -35,145 +36,151 @@ namespace Test_2D_RPG
         {
             spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            Texture2D grass = Content.Load<Texture2D>("Tiles/Grass_Middle");
-            Texture2D path  = Content.Load<Texture2D>("Tiles/Path_Middle");
-            Texture2D water = Content.Load<Texture2D>("Tiles/Water_Middle");
-            Texture2D tree  = Content.Load<Texture2D>("Outdoor decoration/Oak_Tree");
+            // Texturen laden
+            Texture2D gras  = Content.Load<Texture2D>("Tiles/Grass_Middle");
+            Texture2D weg   = Content.Load<Texture2D>("Tiles/Path_Middle");
+            Texture2D wasser = Content.Load<Texture2D>("Tiles/Water_Middle");
+            Texture2D baum   = Content.Load<Texture2D>("Outdoor decoration/Oak_Tree");
 
-            Texture2D woodBlock   = MakePixel(new Color(139,  90,  43));
-            Texture2D sunkenBlock = MakePixel(new Color( 60, 110, 100));
-            Texture2D goalTile    = MakePixel(new Color(255, 200,   0));
-            Texture2D switchTile  = MakePixel(new Color(255, 140,   0));
-            Texture2D doorTile    = MakePixel(new Color(120,  20,  20));
-            Texture2D usedSwitch  = MakePixel(new Color( 80,  80,  80));
-            winOverlay            = MakePixel(Color.White);
+            // Farb-Platzhalter fuer Bloecke usw
+            Texture2D holzBlock        = FarbeAlsTextur(new Color(139,  90,  43));
+            Texture2D versunkenBlock   = FarbeAlsTextur(new Color( 60, 110, 100));
+            Texture2D zielKachel       = FarbeAlsTextur(new Color(255, 200,   0));
+            Texture2D schalterKachel   = FarbeAlsTextur(new Color(255, 140,   0));
+            Texture2D torKachel        = FarbeAlsTextur(new Color(120,  20,  20));
+            Texture2D benutzterSchalter = FarbeAlsTextur(new Color( 80,  80,  80));
+            gewonnenBild               = FarbeAlsTextur(Color.White);
 
-            //  MAP 1 – Mitte
-            int[,] map1Data = new int[,]
+            // Map 1 - Mitte (Startmap)
+            int[,] karte1 = new int[,]
             {
-                {  1, 1, 1, 1, 1, 1, 1, 2, 0, 1, 1, 1, 1, 1, 1, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 1 }, 
-                {  1, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1 }, 
-                {  1, 0, 3, 0, 8, 0, 0, 0, 0, 0, 4, 0, 0, 3, 2, 1 }, 
-                {  1, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 3, 2, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 3, 2, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 3, 3, 2, 1 }, 
-                {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 3, 0, 2, 0 }, 
-                {  2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 3, 0, 3, 0, 2, 0 }, 
-                {  1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 3, 0, 2, 1 }, 
-                {  1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 3, 0, 2, 1 }, 
-                {  1, 0, 0, 5, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1 }, 
-                {  1, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 3, 3, 3, 3, 3, 3, 2, 0, 3, 3, 3, 3, 3, 3, 3 }, 
+                {  1, 1, 1, 1, 1, 1, 1, 2, 0, 1, 1, 1, 1, 1, 1, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 1 },
+                {  1, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 1 },
+                {  1, 0, 3, 0, 8, 0, 0, 0, 0, 0, 4, 0, 0, 3, 2, 1 },
+                {  1, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 3, 2, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 3, 2, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 3, 3, 2, 1 },
+                {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 3, 0, 2, 0 },
+                {  2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 3, 0, 3, 0, 2, 0 },
+                {  1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 3, 0, 2, 1 },
+                {  1, 0, 0, 0, 2, 0, 0, 0, 0, 0, 3, 0, 3, 0, 2, 1 },
+                {  1, 0, 0, 5, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1 },
+                {  1, 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 3, 3, 3, 3, 3, 3, 2, 0, 3, 3, 3, 3, 3, 3, 3 },
             };
 
-            //  MAP 2 – Rechts
-            int[,] map2Data = new int[,]
+            // Map 2 - Rechts
+            int[,] karte2 = new int[,]
             {
-                {  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 3, 0, 1 }, 
-                {  1, 0, 0, 3, 0, 8, 0, 4, 0, 0, 0, 0, 0, 3, 0, 1 }, 
-                {  1, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 1 }, 
-                {  1, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 3, 0, 1 }, 
-                {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 5, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, 
+                {  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 3, 0, 1 },
+                {  1, 0, 0, 3, 0, 8, 0, 4, 0, 0, 0, 0, 0, 3, 0, 1 },
+                {  1, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 1 },
+                {  1, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 3, 0, 1 },
+                {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 5, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 1 },
+                {  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
             };
 
-            //  MAP 3 – Oben
-            int[,] map3Data = new int[,]
+            // Map 3 - Oben
+            int[,] karte3 = new int[,]
             {
-                {  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 3, 0, 3, 3, 3, 3, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 3, 0, 0, 0, 4, 0, 3, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 3, 0, 0, 0, 4, 8, 3, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 3, 3, 3, 3, 3, 3, 0, 0, 3, 3, 3, 3, 3, 3, 3 }, 
+                {  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 3, 0, 3, 3, 3, 3, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 3, 0, 0, 0, 4, 0, 3, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 3, 0, 0, 0, 4, 8, 3, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 3, 3, 3, 3, 3, 3, 0, 0, 3, 3, 3, 3, 3, 3, 3 },
             };
 
-            //  MAP 4 – Links
-            int[,] map4Data = new int[,]
+            // Map 4 - Links
+            int[,] karte4 = new int[,]
             {
-                {  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 1 }, 
-                {  1, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 1 }, 
-                {  1, 0, 0, 3, 0, 0, 3, 3, 3, 3, 3, 0, 0, 3, 0, 0 }, 
-                {  1, 0, 0, 3, 0, 0, 3, 0, 0, 0, 3, 0, 0, 3, 0, 0 }, 
-                {  1, 0, 0, 3, 3, 0, 3, 0, 0, 0, 3, 0, 0, 3, 3, 1 }, 
-                {  1, 0, 0, 0, 3, 0, 3, 3, 3, 3, 3, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 3, 0, 8, 4, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 1 }, 
-                {  1, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1 }, 
+                {  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 1 },
+                {  1, 0, 0, 3, 0, 0, 0, 4, 0, 0, 0, 0, 0, 3, 0, 1 },
+                {  1, 0, 0, 3, 0, 0, 3, 3, 3, 3, 3, 0, 0, 3, 0, 0 },
+                {  1, 0, 0, 3, 0, 0, 3, 0, 0, 0, 3, 0, 0, 3, 0, 0 },
+                {  1, 0, 0, 3, 3, 0, 3, 0, 0, 0, 3, 0, 0, 3, 3, 1 },
+                {  1, 0, 0, 0, 3, 0, 3, 3, 3, 3, 3, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 3, 0, 8, 4, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 3, 3, 3, 3, 3, 3, 3, 3, 1 },
+                {  1, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 1 },
             };
 
-            //  MAP 5 – SUEDEN / ZIEL  (unveraendert)
-            int[,] map5Data = new int[,]
+            // Map 5 - UNten
+            int[,] karte5 = new int[,]
             {
-                {  1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 3, 3, 3, 3, 3, 3, 9, 3, 3, 3, 3, 3, 3, 3, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 3, 3, 3, 3, 3, 3, 9, 3, 3, 3, 3, 3, 3, 3, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 3, 3, 3, 3, 3, 3, 9, 3, 3, 3, 3, 3, 3, 3, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 3, 3, 3, 3, 3, 3, 9, 3, 3, 3, 3, 3, 3, 3, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 }, 
-                {  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }, 
+                {  1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 3, 3, 3, 3, 3, 3, 9, 3, 3, 3, 3, 3, 3, 3, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 3, 3, 3, 3, 3, 3, 9, 3, 3, 3, 3, 3, 3, 3, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 3, 3, 3, 3, 3, 3, 9, 3, 3, 3, 3, 3, 3, 3, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 3, 3, 3, 3, 3, 3, 9, 3, 3, 3, 3, 3, 3, 3, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1 },
+                {  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
             };
 
-            map1 = new Map(map1Data, grass, path, tree, water, woodBlock, sunkenBlock, goalTile, switchTile, doorTile, usedSwitch);
-            map2 = new Map(map2Data, grass, path, tree, water, woodBlock, sunkenBlock, goalTile, switchTile, doorTile, usedSwitch);
-            map3 = new Map(map3Data, grass, path, tree, water, woodBlock, sunkenBlock, goalTile, switchTile, doorTile, usedSwitch);
-            map4 = new Map(map4Data, grass, path, tree, water, woodBlock, sunkenBlock, goalTile, switchTile, doorTile, usedSwitch);
-            map5 = new Map(map5Data, grass, path, tree, water, woodBlock, sunkenBlock, goalTile, switchTile, doorTile, usedSwitch);
+            // Karten erstellen und verbinden
+            map1 = new Map(karte1, gras, weg, baum, wasser, holzBlock, versunkenBlock, zielKachel, schalterKachel, torKachel, benutzterSchalter);
+            map2 = new Map(karte2, gras, weg, baum, wasser, holzBlock, versunkenBlock, zielKachel, schalterKachel, torKachel, benutzterSchalter);
+            map3 = new Map(karte3, gras, weg, baum, wasser, holzBlock, versunkenBlock, zielKachel, schalterKachel, torKachel, benutzterSchalter);
+            map4 = new Map(karte4, gras, weg, baum, wasser, holzBlock, versunkenBlock, zielKachel, schalterKachel, torKachel, benutzterSchalter);
+            map5 = new Map(karte5, gras, weg, baum, wasser, holzBlock, versunkenBlock, zielKachel, schalterKachel, torKachel, benutzterSchalter);
 
+            // Verbindungen zwischen den Karten setzen
             map1.East  = map2; map2.West  = map1;
             map1.North = map3; map3.South = map1;
             map1.West  = map4; map4.East  = map1;
             map1.South = map5; map5.North = map1;
 
-            currentMap = map1;
+            aktuelleMap = map1;
 
-            Texture2D playerSheet = Content.Load<Texture2D>("Player/Player");
-            player = new Player(playerSheet, new Vector2(7 * 32, 11 * 32));
+            // Spieler laden und auf Startposition setzen
+            Texture2D spielerBild = Content.Load<Texture2D>("Player/Player");
+            spieler = new Player(spielerBild, new Vector2(7 * 32, 11 * 32));
         }
 
-        private Texture2D MakePixel(Color color)
+        // erstellt eine 1x1 Textur mit einer Farbe
+        private Texture2D FarbeAlsTextur(Color farbe)
         {
             Texture2D t = new Texture2D(GraphicsDevice, 1, 1);
-            t.SetData(new Color[] { color });
+            t.SetData(new Color[] { farbe });
             return t;
         }
 
@@ -181,50 +188,55 @@ namespace Test_2D_RPG
         {
             if (Keyboard.GetState().IsKeyDown(Keys.Escape)) Exit();
 
-            if (!gameWon)
+            if (!gewonnen)
             {
-                player.Update(gameTime, currentMap);
-                CheckRoomTransition();
-                CheckSwitchAndGoal();
+                spieler.Update(gameTime, aktuelleMap);
+                KarteWechseln();
+                SchalterUndZielPruefen();
             }
 
             base.Update(gameTime);
         }
 
-        private void CheckRoomTransition()
+        // prueft ob der Spieler den Rand erreicht hat und wechelt dann die Karte
+        private void KarteWechseln()
         {
-            int s = Map.Columns * Map.TileSize; // 512
+            int groesse = Map.Columns * Map.TileSize;
 
-            if      (player.Position.X + 32 > s && currentMap.East  != null) { currentMap = currentMap.East;  player.Position = new Vector2(1,   player.Position.Y); }
-            else if (player.Position.X < 0        && currentMap.West  != null) { currentMap = currentMap.West;  player.Position = new Vector2(s-33, player.Position.Y); }
-            else if (player.Position.Y + 32 > s && currentMap.South != null) { currentMap = currentMap.South; player.Position = new Vector2(player.Position.X, 1);   }
-            else if (player.Position.Y < 0        && currentMap.North != null) { currentMap = currentMap.North; player.Position = new Vector2(player.Position.X, s-33); }
+            if      (spieler.Position.X + 32 > groesse && aktuelleMap.East  != null) { aktuelleMap = aktuelleMap.East;  spieler.Position = new Vector2(1, spieler.Position.Y); }
+            else if (spieler.Position.X < 0            && aktuelleMap.West  != null) { aktuelleMap = aktuelleMap.West;  spieler.Position = new Vector2(groesse - 33, spieler.Position.Y); }
+            else if (spieler.Position.Y + 32 > groesse && aktuelleMap.South != null) { aktuelleMap = aktuelleMap.South; spieler.Position = new Vector2(spieler.Position.X, 1); }
+            else if (spieler.Position.Y < 0            && aktuelleMap.North != null) { aktuelleMap = aktuelleMap.North; spieler.Position = new Vector2(spieler.Position.X, groesse - 33); }
         }
 
-        private void CheckSwitchAndGoal()
+        // schaut ob spieler auf schalter oder Ziel steht
+        private void SchalterUndZielPruefen()
         {
-            int col  = (int)((player.Position.X + 16) / Map.TileSize);
-            int row  = (int)((player.Position.Y + 28) / Map.TileSize);
-            int tile = currentMap.GetTile(col, row);
+            int spalte = (int)((spieler.Position.X + 16) / Map.TileSize);
+            int zeile  = (int)((spieler.Position.Y + 28) / Map.TileSize);
+            int kachel = aktuelleMap.GetTile(spalte, zeile);
 
-            if (tile == 8)
+            // Schalter aktivieren
+            if (kachel == 8)
             {
-                if      (currentMap == map1 && !switchActivated[0]) ActivateSwitch(0, 3);
-                else if (currentMap == map2 && !switchActivated[1]) ActivateSwitch(1, 5);
-                else if (currentMap == map3 && !switchActivated[2]) ActivateSwitch(2, 7);
-                else if (currentMap == map4 && !switchActivated[3]) ActivateSwitch(3, 9);
+                if      (aktuelleMap == map1 && !schalterAktiv[0]) SchalterAktivieren(0, 3);
+                else if (aktuelleMap == map2 && !schalterAktiv[1]) SchalterAktivieren(1, 5);
+                else if (aktuelleMap == map3 && !schalterAktiv[2]) SchalterAktivieren(2, 7);
+                else if (aktuelleMap == map4 && !schalterAktiv[3]) SchalterAktivieren(3, 9);
             }
 
-            if (currentMap == map5 && tile == 7) gameWon = true;
+            // Ziel erreicht?
+            if (aktuelleMap == map5 && kachel == 7)
+                gewonnen = true;
         }
 
-        private void ActivateSwitch(int index, int gateRow)
+        private void SchalterAktivieren(int index, int torZeile)
         {
-            switchActivated[index] = true;
-            int col = (int)((player.Position.X + 16) / Map.TileSize);
-            int row = (int)((player.Position.Y + 28) / Map.TileSize);
-            currentMap.SetTile(col, row, 10);
-            map5.SetTile(7, gateRow, 0);
+            schalterAktiv[index] = true;
+            int spalte = (int)((spieler.Position.X + 16) / Map.TileSize);
+            int zeile  = (int)((spieler.Position.Y + 28) / Map.TileSize);
+            aktuelleMap.SetTile(spalte, zeile, 10);  // Schalter als benutzt markieren
+            map5.SetTile(7, torZeile, 0);             // Tor in Map5 öffnen
         }
 
         protected override void Draw(GameTime gameTime)
@@ -232,13 +244,15 @@ namespace Test_2D_RPG
             GraphicsDevice.Clear(Color.Black);
             spriteBatch.Begin(samplerState: SamplerState.PointClamp);
 
-            currentMap.DrawGround(spriteBatch);
-            currentMap.DrawTrees(spriteBatch);
-            player.Draw(spriteBatch);
-            currentMap.DrawTreesUnten(spriteBatch);
+            // Reihenfolge ist wichtig damit Spieler hinter Bäumen erscheint
+            aktuelleMap.DrawGround(spriteBatch);
+            aktuelleMap.DrawTrees(spriteBatch);
+            spieler.Draw(spriteBatch);
+            aktuelleMap.DrawTreesUnten(spriteBatch);
 
-            if (gameWon)
-                spriteBatch.Draw(winOverlay, new Rectangle(0, 0, 512, 512), Color.Gold * 0.55f);
+            // Gewonnen-Overlay anzeigen
+            if (gewonnen)
+                spriteBatch.Draw(gewonnenBild, new Rectangle(0, 0, 512, 512), Color.Gold * 0.55f);
 
             spriteBatch.End();
             base.Draw(gameTime);
