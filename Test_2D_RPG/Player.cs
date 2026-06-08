@@ -53,11 +53,13 @@ namespace Test_2D_RPG
             else if (Math.Abs(direction.Y) > Math.Abs(direction.X) + 0.1f)
                 pushRow = direction.Y > 0 ? 1 : -1;
 
+
             // Tile-Mittelpunkt VOR der Bewegung
             int oldCenterCol = (int)((Position.X + HbOffX + HbW / 2f) / Map.TileSize);
             int oldCenterRow = (int)((Position.Y + HbOffY + HbH / 2f) / Map.TileSize);
 
-            // ── Kollision ──────────────────────────────────────
+
+            // Kollision-------------------------------------------
             int leftCol   = (int)((newPosition.X + HbOffX)           / Map.TileSize);
             int rightCol  = (int)((newPosition.X + HbOffX + HbW - 1) / Map.TileSize);
             int topRow    = (int)((newPosition.Y + HbOffY)           / Map.TileSize);
@@ -68,7 +70,8 @@ namespace Test_2D_RPG
                         || currentMap.IsSolid(leftCol,  bottomRow)
                         || currentMap.IsSolid(rightCol, bottomRow);
 
-            // ── SCHIEBEN ───────────────────────────────────────
+
+            // Scheiben---------------------------------------------
             if (blocked && !isPulling && pushCooldown <= 0 && (pushCol != 0 || pushRow != 0))
             {
                 int hitCenterCol = (int)((Position.X + HbOffX + HbW / 2f) / Map.TileSize);
@@ -84,13 +87,11 @@ namespace Test_2D_RPG
                 }
             }
 
-            // ── BEWEGEN ────────────────────────────────────────
+            // Bewegen--------------------------------------------
             if (!blocked) Position = newPosition;
 
-            // ── ZIEHEN (E-Taste) ───────────────────────────────
-            // Verwendet Map.MoveBlock() statt roher SetTile-Aufrufe, damit
-            // das underlayer-System den Tile-Typ unter dem Block korrekt
-            // speichert und wiederherstellt (Weg-/Versunken-Tiles bleiben erhalten).
+            // Ziehen---------------------------------------------
+
             if (!blocked && isPulling && pullCooldown <= 0 && (pushCol != 0 || pushRow != 0))
             {
                 int newCenterCol = (int)((Position.X + HbOffX + HbW / 2f) / Map.TileSize);
@@ -104,7 +105,7 @@ namespace Test_2D_RPG
                     int behindCol = oldCenterCol - pushCol;
                     if (currentMap.GetTile(behindCol, oldCenterRow) == 5)
                     {
-                        // Snap-Fix: Spieler muss Hitbox-Kante aus oldCenterCol herausbewegen
+                        // Spieler Hitbox raus aus Block
                         if (pushCol > 0)
                         {
                             float safeX = (oldCenterCol + 1) * Map.TileSize - HbOffX;
@@ -116,7 +117,7 @@ namespace Test_2D_RPG
                             if (Position.X > safeX) Position = new Vector2(safeX, Position.Y);
                         }
 
-                        // MoveBlock erhält und restauriert den Tile-Typ unter dem Block
+                        // MoveBlock erhält und setzt den Tile-Typ unter dem Block
                         currentMap.MoveBlock(behindCol, oldCenterRow, oldCenterCol, oldCenterRow);
                         pullCooldown = CooldownTime;
                     }

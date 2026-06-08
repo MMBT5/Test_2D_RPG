@@ -75,7 +75,7 @@ namespace Test_2D_RPG
             }
         }
 
-        // Schicht 2: Baeume HINTER dem Spieler – voller Baum (Typ 1)
+        // Schicht 2: Bäume HINTER dem Spieler – voller Baum (Typ 1)
         public void DrawTrees(SpriteBatch spriteBatch)
         {
             for (int row = 0; row < Rows; row++)
@@ -129,8 +129,6 @@ namespace Test_2D_RPG
         }
 
         // Verschiebt einen Block per SCHIEBEN (wird aus Player.cs aufgerufen).
-        // Stellt den Tile-Typ unter dem Block korrekt wieder her –
-        // z.B. bleibt ein Weg-Tile erhalten wenn der Block darueber geschoben wird.
         public bool TryPushBlock(int col, int row, int dirCol, int dirRow)
         {
             if (GetTile(col, row) != 5) return false;
@@ -139,13 +137,13 @@ namespace Test_2D_RPG
             int tr = row + dirRow;
             int tt = GetTile(tc, tr);
 
-            if (tt == 4) // Wasser → Block versinkt
+            if (tt == 4) // Wasser : Block versinkt
             {
                 // Ursprungsposition: was unter dem Block lag, wiederherstellen
                 SetTile(col, row, underlayer[row, col]);
                 underlayer[row, col] = 0;
 
-                // Zielposition: wird versunken (kein underlayer-Eintrag noetig)
+                // Zielposition: wird versunken
                 SetTile(tc, tr, 6);
                 return true;
             }
@@ -167,8 +165,6 @@ namespace Test_2D_RPG
         }
 
         // Verschiebt einen Block per ZIEHEN (wird aus Player.cs aufgerufen).
-        // Identisch zur Push-Logik, aber Richtung und Pruefung kommen vom Aufrufer.
-        // Gibt true zurueck wenn der Block erfolgreich bewegt wurde.
         public bool MoveBlock(int fromCol, int fromRow, int toCol, int toRow)
         {
             if (GetTile(fromCol, fromRow) != 5) return false;
