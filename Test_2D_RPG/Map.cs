@@ -6,152 +6,149 @@ namespace Test_2D_RPG
     public class Map
     {
         public const int TileSize = 32;
-        public const int Columns  = 16;
-        public const int Rows     = 16;
+        public const int Columns = 16;
+        public const int Rows = 16;
 
-        private int[,] kacheln;
+        private int[,] tiles;
 
-        // speichert was unter einem Block liegt
-        // sonst wird beim verschieben immer Gras gesetzt 
-        private int[,] unterKachel;
+        // Merken sich welches Tile und jedem Block liegt 0 = Gras als Standard
+        private int[,] underlayer;
 
-        private Texture2D gras, weg, baum, wasser;
-        private Texture2D holzBlock, versunkenBlock;
-        private Texture2D zielKachel, schalterKachel, torKachel, benutzterSchalter;
+        private Texture2D grass, path, tree, water;
+        private Texture2D woodBlock, sunkenBlock;
+        private Texture2D goalTile, switchTile, doorTile, usedSwitch;
 
-        // Nachbarkarten
         public Map North, South, East, West;
 
-        public Map(int[,] kacheln,
-                   Texture2D gras, Texture2D weg, Texture2D baum,
-                   Texture2D wasser, Texture2D holzBlock, Texture2D versunkenBlock,
-                   Texture2D zielKachel, Texture2D schalterKachel,
-                   Texture2D torKachel, Texture2D benutzterSchalter)
+        public Map(int[,] tiles,
+                   Texture2D grass, Texture2D path, Texture2D tree, Texture2D water, Texture2D woodBlock, Texture2D sunkenBlock, Texture2D goalTile, Texture2D switchTile, Texture2D doorTile, Texture2D usedSwitch)
         {
-            this.kacheln          = kacheln;
-            this.gras             = gras;
-            this.weg              = weg;
-            this.baum             = baum;
-            this.wasser           = wasser;
-            this.holzBlock        = holzBlock;
-            this.versunkenBlock   = versunkenBlock;
-            this.zielKachel       = zielKachel;
-            this.schalterKachel   = schalterKachel;
-            this.torKachel        = torKachel;
-            this.benutzterSchalter = benutzterSchalter;
+            this.tiles = tiles;
+            this.grass = grass;
+            this.path = path;
+            this.tree = tree;
+            this.water = water;
+            this.woodBlock = woodBlock;
+            this.sunkenBlock = sunkenBlock;
+            this.goalTile = goalTile;
+            this.switchTile = switchTile;
+            this.doorTile = doorTile;
+            this.usedSwitch = usedSwitch;
 
-            unterKachel = new int[Rows, Columns]; // standartmäßig 0 (Gras)
+            underlayer = new int[Rows, Columns];
         }
 
-        // Boden zeichnen (Schicht 1)
+        // Boden zeichnen
         public void DrawGround(SpriteBatch spriteBatch)
         {
-            for (int zeile = 0; zeile < Rows; zeile++)
-            for (int spalte = 0; spalte < Columns; spalte++)
+            for (int row = 0; row < Rows; row++)
             {
-                Rectangle bereich = new Rectangle(spalte * TileSize, zeile * TileSize, TileSize, TileSize);
-                switch (kacheln[zeile, spalte])
+                for (int col = 0; col < Columns; col++)
                 {
-                    case 2: spriteBatch.Draw(weg,             bereich, Color.White); break;
-                    case 4: spriteBatch.Draw(wasser,          bereich, Color.White); break;
-                    case 5:
-                        spriteBatch.Draw(gras,      bereich, Color.White);
-                        spriteBatch.Draw(holzBlock, bereich, Color.White); break;
-                    case 6: spriteBatch.Draw(versunkenBlock,  bereich, Color.White); break;
-                    case 7:
-                        spriteBatch.Draw(gras,       bereich, Color.White);
-                        spriteBatch.Draw(zielKachel, bereich, Color.White); break;
-                    case 8:
-                        spriteBatch.Draw(gras,           bereich, Color.White);
-                        spriteBatch.Draw(schalterKachel, bereich, Color.White); break;
-                    case 9: spriteBatch.Draw(torKachel,       bereich, Color.White); break;
-                    case 10:
-                        spriteBatch.Draw(gras,              bereich, Color.White);
-                        spriteBatch.Draw(benutzterSchalter, bereich, Color.White); break;
-                    default: spriteBatch.Draw(gras, bereich, Color.White); break;
+                    Rectangle dest = new Rectangle(col * TileSize, row * TileSize, TileSize, TileSize);
+
+                    switch (tiles[row, col])
+                    {
+                        case 2:  spriteBatch.Draw(path, dest, Color.White); break;
+                        case 4:  spriteBatch.Draw(water, dest, Color.White); break;
+                        case 5:  spriteBatch.Draw(grass, dest, Color.White); spriteBatch.Draw(woodBlock, dest, Color.White); break;
+                        case 6:  spriteBatch.Draw(sunkenBlock, dest, Color.White); break;
+                        case 7:  spriteBatch.Draw(grass, dest, Color.White); spriteBatch.Draw(goalTile, dest, Color.White); break;
+                        case 8:  spriteBatch.Draw(grass, dest, Color.White); spriteBatch.Draw(switchTile, dest, Color.White); break;
+                        case 9:  spriteBatch.Draw(doorTile, dest, Color.White); break;
+                        case 10: spriteBatch.Draw(grass, dest, Color.White); spriteBatch.Draw(usedSwitch, dest, Color.White); break;
+                        default: spriteBatch.Draw(grass, dest, Color.White); break;
+                    }
                 }
             }
         }
 
-        // Bäume hinter dem Spieler zeichnen (Typ 1)
+        // Bäume 1 hinter dem Spieler zeichnen 
         public void DrawTrees(SpriteBatch spriteBatch)
         {
-            for (int zeile = 0; zeile < Rows; zeile++)
-            for (int spalte = 0; spalte < Columns; spalte++)
+            for (int row = 0; row < Rows; row++)
             {
-                if (kacheln[zeile, spalte] != 1) continue;
-                int x = spalte * TileSize + TileSize / 2 - baum.Width / 2;
-                int y = zeile  * TileSize + TileSize     - baum.Height;
-                spriteBatch.Draw(baum, new Rectangle(x, y, baum.Width, baum.Height), Color.White);
+                for (int col = 0; col < Columns; col++)
+                {
+                    if (tiles[row, col] == 1)
+                    {
+                        int x = col * TileSize + TileSize / 2 - tree.Width / 2;
+                        int y = row * TileSize + TileSize - tree.Height;
+                        spriteBatch.Draw(tree, new Rectangle(x, y, tree.Width, tree.Height), Color.White);
+                    }
+                }
             }
         }
 
-        // Baumstümpfe vor dem Spieler zeichnen (Typ 3)
+        // Baumstümpfe 3 vor dem Spieler zeichnen 
         // nur die unteren 30px damit man den Spieler noch sieht
         public void DrawTreesUnten(SpriteBatch spriteBatch)
         {
-            const int stumpfHoehe = 30;
-
-            for (int zeile = 0; zeile < Rows; zeile++)
-            for (int spalte = 0; spalte < Columns; spalte++)
+            for (int row = 0; row < Rows; row++)
             {
-                if (kacheln[zeile, spalte] != 3) continue;
+                for (int col = 0; col < Columns; col++)
+                {
+                    if (tiles[row, col] == 3)
+                    {
+                        int x = col * TileSize + TileSize / 2 - tree.Width / 2;
+                        int stumpY = row * TileSize + TileSize - 30;
 
-                int x      = spalte * TileSize + TileSize / 2 - baum.Width / 2;
-                int stumpY = zeile  * TileSize + TileSize - stumpfHoehe;
+                        Rectangle src  = new Rectangle(0, tree.Height - 30, tree.Width, 30);
+                        Rectangle dest = new Rectangle(x, stumpY, tree.Width, 30);
 
-                Rectangle quelle = new Rectangle(0, baum.Height - stumpfHoehe, baum.Width, stumpfHoehe);
-                Rectangle ziel   = new Rectangle(x, stumpY, baum.Width, stumpfHoehe);
-
-                spriteBatch.Draw(baum, ziel, quelle, Color.White);
+                        spriteBatch.Draw(tree, dest, src, Color.White);
+                    }
+                }
             }
         }
 
-        // gibt zurück ob eine Kachel den Spieler blockiert
-        public bool IsSolid(int spalte, int zeile)
+        public bool IsSolid(int col, int row)
         {
-            if (spalte < 0 || spalte >= Columns || zeile < 0 || zeile >= Rows)
+            if (col < 0 || col >= Columns || row < 0 || row >= Rows)
                 return false;
-            int t = kacheln[zeile, spalte];
+
+            int t = tiles[row, col];
             return t == 1 || t == 3 || t == 4 || t == 5 || t == 9;
         }
 
-        public int GetTile(int spalte, int zeile)
+        public int GetTile(int col, int row)
         {
-            if (spalte < 0 || spalte >= Columns || zeile < 0 || zeile >= Rows) return -1;
-            return kacheln[zeile, spalte];
+            if (col < 0 || col >= Columns || row < 0 || row >= Rows) return -1;
+            return tiles[row, col];
         }
 
-        public void SetTile(int spalte, int zeile, int wert)
+        public void SetTile(int col, int row, int value)
         {
-            if (spalte < 0 || spalte >= Columns || zeile < 0 || zeile >= Rows) return;
-            kacheln[zeile, spalte] = wert;
+            if (col < 0 || col >= Columns || row < 0 || row >= Rows) return;
+            tiles[row, col] = value;
         }
 
-        // Versuch einen Block in eine Richtung zu schieben
-        public bool TryPushBlock(int spalte, int zeile, int richtungX, int richtungY)
+        // Block schieben
+        public bool TryPushBlock(int col, int row, int dirCol, int dirRow)
         {
-            if (GetTile(spalte, zeile) != 5) return false;
+            if (GetTile(col, row) != 5) return false;
 
-            int zielSpalte = spalte + richtungX;
-            int zielZeile  = zeile  + richtungY;
+            int zielSpalte = col + dirCol;
+            int zielZeile  = row + dirRow;
             int zielTyp    = GetTile(zielSpalte, zielZeile);
 
-            if (zielTyp == 4) // Wasser : Block versinct
+            if (zielTyp == 4)
             {
-                SetTile(spalte, zeile, unterKachel[zeile, spalte]);
-                unterKachel[zeile, spalte] = 0;
+                // Block faellt ins Wasser und versinkt
+                SetTile(col, row, underlayer[row, col]);
+                underlayer[row, col] = 0;
                 SetTile(zielSpalte, zielZeile, 6);
                 return true;
             }
 
-            if (zielTyp == 0 || zielTyp == 2 || zielTyp == 6) // Gras, Weg oder versunkener Block
+            if (zielTyp == 0 || zielTyp == 2 || zielTyp == 6)
             {
-                int gespeichert = unterKachel[zeile, spalte];
-                unterKachel[zeile, spalte] = 0;
-                SetTile(spalte, zeile, gespeichert);
+                // Block gleitet auf Gras, Weg oder versunkenen Block
+                int darunter = underlayer[row, col];
+                underlayer[row, col] = 0;
+                SetTile(col, row, darunter);
 
-                unterKachel[zielZeile, zielSpalte] = zielTyp;
+                underlayer[zielZeile, zielSpalte] = zielTyp;
                 SetTile(zielSpalte, zielZeile, 5);
                 return true;
             }
@@ -159,22 +156,15 @@ namespace Test_2D_RPG
             return false;
         }
 
-        // Block ziehen (wird von Player.cs aufgerufen)
-        public bool MoveBlock(int vonSpalte, int vonZeile, int nachSpalte, int nachZeile)
+        // Block ziehen (fuer die E-Taste in Player.cs)
+        public void MoveBlock(int vonSpalte, int vonZeile, int nachSpalte, int nachZeile)
         {
-            if (GetTile(vonSpalte, vonZeile) != 5) return false;
+            int darunter = underlayer[vonZeile, vonSpalte];
+            underlayer[vonZeile, vonSpalte] = 0;
+            SetTile(vonSpalte, vonZeile, darunter);
 
-            int zielTyp = GetTile(nachSpalte, nachZeile);
-            if (zielTyp != 0 && zielTyp != 2 && zielTyp != 6) return false;
-
-            int gespeichert = unterKachel[vonZeile, vonSpalte];
-            unterKachel[vonZeile, vonSpalte] = 0;
-            SetTile(vonSpalte, vonZeile, gespeichert);
-
-            unterKachel[nachZeile, nachSpalte] = zielTyp;
+            underlayer[nachZeile, nachSpalte] = GetTile(nachSpalte, nachZeile);
             SetTile(nachSpalte, nachZeile, 5);
-
-            return true;
         }
     }
 }

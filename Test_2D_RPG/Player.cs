@@ -1,4 +1,3 @@
-using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -9,145 +8,137 @@ namespace Test_2D_RPG
     {
         private Texture2D spielerBild;
         public Vector2 Position;
-        private float geschwindigkeit = 120f;
 
-        // welcher Frame vom Spritesheet wird gezeichnet
         private Rectangle quellRechteck = new Rectangle(0, 0, 30, 30);
 
         private float schiebeWartezeit = 0f;
-        private float ziehWartezeit    = 0f;
-        private const float Wartezeit  = 0.22f;
-
-        // Hitbox Werte (Offset und Größe)
-        private const int HbOffX = 4, HbOffY = 24, HbW = 20, HbH = 12;
+        private float ziehWartezeit = 0f;
 
         public Player(Texture2D bild, Vector2 startPosition)
         {
             spielerBild = bild;
-            Position    = startPosition;
+            Position = startPosition;
         }
 
         public void Update(GameTime gameTime, Map aktuelleMap)
         {
-            float deltaZeit = (float)gameTime.ElapsedGameTime.TotalSeconds;
-            geschwindigkeit = 120f;
+            float dt = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            if (schiebeWartezeit > 0) schiebeWartezeit -= deltaZeit;
-            if (ziehWartezeit    > 0) ziehWartezeit    -= deltaZeit;
+            if (schiebeWartezeit > 0) schiebeWartezeit -= dt;
+            if (ziehWartezeit > 0) ziehWartezeit -= dt;
 
-            KeyboardState tastatur = Keyboard.GetState();
-            if (tastatur.IsKeyDown(Keys.LeftShift)) geschwindigkeit = 220f;
-            bool ziehtGerade = tastatur.IsKeyDown(Keys.E);
+            KeyboardState kb = Keyboard.GetState();
+            bool zieht = kb.IsKeyDown(Keys.E);
 
-            // Eingabe lesen
-            Vector2 richtung = Vector2.Zero;
-            if (tastatur.IsKeyDown(Keys.W) || tastatur.IsKeyDown(Keys.Up))    richtung.Y -= 1;
-            if (tastatur.IsKeyDown(Keys.S) || tastatur.IsKeyDown(Keys.Down))  richtung.Y += 1;
-            if (tastatur.IsKeyDown(Keys.A) || tastatur.IsKeyDown(Keys.Left))  richtung.X -= 1;
-            if (tastatur.IsKeyDown(Keys.D) || tastatur.IsKeyDown(Keys.Right)) richtung.X += 1;
-            if (richtung != Vector2.Zero) richtung.Normalize();
+            // Geschwindigkeit, Sprint mit Shift
+            float speed = 120f;
+            if (kb.IsKeyDown(Keys.LeftShift)) speed = 220f;
 
-            Vector2 neuePosition = Position + richtung * geschwindigkeit * deltaZeit;
+            // Bewegungsrichtung einlesen
+            Vector2 dir = Vector2.Zero;
+            if (kb.IsKeyDown(Keys.W) || kb.IsKeyDown(Keys.Up))    dir.Y = -1;
+            if (kb.IsKeyDown(Keys.S) || kb.IsKeyDown(Keys.Down))  dir.Y =  1;
+            if (kb.IsKeyDown(Keys.A) || kb.IsKeyDown(Keys.Left))  dir.X = -1;
+            if (kb.IsKeyDown(Keys.D) || kb.IsKeyDown(Keys.Right)) dir.X =  1;
+            if (dir != Vector2.Zero) dir.Normalize();
 
-            // dominante Bewegungsrichtung bestimmen (fuer schieben/ziehen)
-            int schiebeX = 0, schiebeY = 0;
-            if      (Math.Abs(richtung.X) > Math.Abs(richtung.Y) + 0.1f)
-                schiebeX = richtung.X > 0 ? 1 : -1;
-            else if (Math.Abs(richtung.Y) > Math.Abs(richtung.X) + 0.1f)
-                schiebeY = richtung.Y > 0 ? 1 : -1;
+            Vector2 neuePos = Position + dir * speed * dt;
 
-            // alte Kachelposition merken (wird fuer ziehen gebraucht)
-            int alteSpalte = (int)((Position.X + HbOffX + HbW / 2f) / Map.TileSize);
-            int alteZeile  = (int)((Position.Y + HbOffY + HbH / 2f) / Map.TileSize);
+            // Schieberichtung bestimmen
+            int schiebeX = 0;
+            int schiebeY = 0;
+            if      (kb.IsKeyDown(Keys.D) || kb.IsKeyDown(Keys.Right)) schiebeX =  1;
+            else if (kb.IsKeyDown(Keys.A) || kb.IsKeyDown(Keys.Left))  schiebeX = -1;
+            else if (kb.IsKeyDown(Keys.S) || kb.IsKeyDown(Keys.Down))  schiebeY =  1;
+            else if (kb.IsKeyDown(Keys.W) || kb.IsKeyDown(Keys.Up))    schiebeY = -1;
 
-            // Kollsionsprüfung-----------------------------------
-            int linkeSpalte  = (int)((neuePosition.X + HbOffX)           / Map.TileSize);
-            int rechteSpalte = (int)((neuePosition.X + HbOffX + HbW - 1) / Map.TileSize);
-            int obereZeile   = (int)((neuePosition.Y + HbOffY)           / Map.TileSize);
-            int untereZeile  = (int)((neuePosition.Y + HbOffY + HbH - 1) / Map.TileSize);
+            // Kachelposition vor der Bewegung merken f�rs ziehen
+            int alteSpalte = (int)((Position.X + 14) / 32);
+            int alteZeile  = (int)((Position.Y + 30) / 32);
 
-            bool blockiert = aktuelleMap.IsSolid(linkeSpalte,  obereZeile)
-                          || aktuelleMap.IsSolid(rechteSpalte, obereZeile)
-                          || aktuelleMap.IsSolid(linkeSpalte,  untereZeile)
-                          || aktuelleMap.IsSolid(rechteSpalte, untereZeile);
+            // Kollision pruefen - 4 Ecken der Hitbox
+            // Hitbox ist kleiner als das Sprite damit man zwischen Baeumen durchpasst
+            // Hit boc nur der Untere Teil des Sprite
+            int links  = (int)((neuePos.X + 4)  / 32);
+            int rechts = (int)((neuePos.X + 23) / 32);
+            int oben   = (int)((neuePos.Y + 24) / 32);
+            int unten  = (int)((neuePos.Y + 35) / 32);
 
-            // Schieben-------------------------------------------
-            if (blockiert && !ziehtGerade && schiebeWartezeit <= 0 && (schiebeX != 0 || schiebeY != 0))
+            bool blockiert = aktuelleMap.IsSolid(links, oben)
+                          || aktuelleMap.IsSolid(rechts, oben)
+                          || aktuelleMap.IsSolid(links, unten)
+                          || aktuelleMap.IsSolid(rechts, unten);
+
+            // Schieben-----------------------------------------------
+            if (blockiert && !zieht && schiebeWartezeit <= 0 && (schiebeX != 0 || schiebeY != 0))
             {
-                int mitteX = (int)((Position.X + HbOffX + HbW / 2f) / Map.TileSize);
-                int mitteY = (int)((Position.Y + HbOffY + HbH / 2f) / Map.TileSize);
+                int mX = (int)((Position.X + 14) / 32);
+                int mY = (int)((Position.Y + 30) / 32);
 
-                if (aktuelleMap.TryPushBlock(mitteX + schiebeX, mitteY + schiebeY, schiebeX, schiebeY))
+                if (aktuelleMap.TryPushBlock(mX + schiebeX, mY + schiebeY, schiebeX, schiebeY))
                 {
-                    schiebeWartezeit = Wartezeit;
-                    // Kollision nochmal prüfen nach dem schieben
-                    blockiert = aktuelleMap.IsSolid(linkeSpalte,  obereZeile)
-                             || aktuelleMap.IsSolid(rechteSpalte, obereZeile)
-                             || aktuelleMap.IsSolid(linkeSpalte,  untereZeile)
-                             || aktuelleMap.IsSolid(rechteSpalte, untereZeile);
+                    schiebeWartezeit = 0.22f;
+
+                    // nach dem Schieben nochmal pruefen ob der Weg jetzt frei ist
+                    blockiert = aktuelleMap.IsSolid(links, oben)
+                             || aktuelleMap.IsSolid(rechts, oben)
+                             || aktuelleMap.IsSolid(links, unten)
+                             || aktuelleMap.IsSolid(rechts, unten);
                 }
             }
 
-            // Bewegen--------------------------------------------
-            if (!blockiert) Position = neuePosition;
+            // Bewegen------------------------------------------------
+            if (!blockiert)
+                Position = neuePos;
 
-            // Ziehen (E gedrückt halten)-------------------------
-            if (!blockiert && ziehtGerade && ziehWartezeit <= 0 && (schiebeX != 0 || schiebeY != 0))
+            // Ziehen (E halten + bewegen)----------------------------
+            if (!blockiert && zieht && ziehWartezeit <= 0 && (schiebeX != 0 || schiebeY != 0))
             {
-                int neueSpalte = (int)((Position.X + HbOffX + HbW / 2f) / Map.TileSize);
-                int neueZeile  = (int)((Position.Y + HbOffY + HbH / 2f) / Map.TileSize);
+                int neueSpalte = (int)((Position.X + 14) / 32);
+                int neueZeile  = (int)((Position.Y + 30) / 32);
 
-                bool kachelWechselX = schiebeX != 0 && neueSpalte != alteSpalte;
-                bool kachelWechselY = schiebeY != 0 && neueZeile  != alteZeile;
+                bool wechselX = schiebeX != 0 && neueSpalte != alteSpalte;
+                bool wechselY = schiebeY != 0 && neueZeile  != alteZeile;
 
-                if (kachelWechselX)
+                if (wechselX)
                 {
                     int hinterSpalte = alteSpalte - schiebeX;
+
                     if (aktuelleMap.GetTile(hinterSpalte, alteZeile) == 5)
                     {
-                        // Spieler wegschnappen damit keine Kollision entsteht
-                        if (schiebeX > 0)
-                        {
-                            float sicherX = (alteSpalte + 1) * Map.TileSize - HbOffX;
-                            if (Position.X < sicherX) Position = new Vector2(sicherX, Position.Y);
-                        }
-                        else
-                        {
-                            float sicherX = alteSpalte * Map.TileSize - HbOffX - HbW;
-                            if (Position.X > sicherX) Position = new Vector2(sicherX, Position.Y);
-                        }
+                        // Spieler minimal wegbewegen damit die Hitbox nicht mit Block �berlappt
+                        if (schiebeX > 0 && Position.X < (alteSpalte + 1) * 32 - 4)
+                            Position = new Vector2((alteSpalte + 1) * 32 - 4, Position.Y);
+                        if (schiebeX < 0 && Position.X > alteSpalte * 32 - 24)
+                            Position = new Vector2(alteSpalte * 32 - 24, Position.Y);
 
                         aktuelleMap.MoveBlock(hinterSpalte, alteZeile, alteSpalte, alteZeile);
-                        ziehWartezeit = Wartezeit;
+                        ziehWartezeit = 0.22f;
                     }
                 }
-                else if (kachelWechselY)
+                else if (wechselY)
                 {
                     int hinterZeile = alteZeile - schiebeY;
+
                     if (aktuelleMap.GetTile(alteSpalte, hinterZeile) == 5)
                     {
-                        if (schiebeY > 0)
-                        {
-                            float sicherY = (alteZeile + 1) * Map.TileSize - HbOffY;
-                            if (Position.Y < sicherY) Position = new Vector2(Position.X, sicherY);
-                        }
-                        else
-                        {
-                            float sicherY = alteZeile * Map.TileSize - HbOffY - HbH;
-                            if (Position.Y > sicherY) Position = new Vector2(Position.X, sicherY);
-                        }
+                        if (schiebeY > 0 && Position.Y < (alteZeile + 1) * 32 - 24)
+                            Position = new Vector2(Position.X, (alteZeile + 1) * 32 - 24);
+                        if (schiebeY < 0 && Position.Y > alteZeile * 32 - 36)
+                            Position = new Vector2(Position.X, alteZeile * 32 - 36);
 
                         aktuelleMap.MoveBlock(alteSpalte, hinterZeile, alteSpalte, alteZeile);
-                        ziehWartezeit = Wartezeit;
+                        ziehWartezeit = 0.22f;
                     }
                 }
             }
         }
 
+
         public void Draw(SpriteBatch spriteBatch)
         {
-            Rectangle zielBereich = new Rectangle((int)Position.X, (int)Position.Y, 32, 32);
-            spriteBatch.Draw(spielerBild, zielBereich, quellRechteck, Color.White);
+            Rectangle bereich = new Rectangle((int)Position.X, (int)Position.Y, 32, 32);
+            spriteBatch.Draw(spielerBild, bereich, quellRechteck, Color.White);
         }
     }
 }
