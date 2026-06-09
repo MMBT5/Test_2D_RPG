@@ -56,8 +56,8 @@ namespace Test_2D_RPG
             int alteSpalte = (int)((Position.X + 14) / 32);
             int alteZeile  = (int)((Position.Y + 30) / 32);
 
-            // Kollision pruefen - 4 Ecken der Hitbox
-            // Hitbox ist kleiner als das Sprite damit man zwischen Baeumen durchpasst
+            // Kollision prüfen - 4 Ecken der Hitbox
+            // Hitbox ist kleiner als der Sprite damit man zwischen Baeumen durchpasst
             // Hit boc nur der Untere Teil des Sprite
             int links  = (int)((neuePos.X + 4)  / 32);
             int rechts = (int)((neuePos.X + 23) / 32);

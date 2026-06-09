@@ -134,7 +134,7 @@ namespace Test_2D_RPG
 
             if (zielTyp == 4)
             {
-                // Block faellt ins Wasser und versinkt
+                // Block fällt ins Wasser und versinkt
                 SetTile(col, row, underlayer[row, col]);
                 underlayer[row, col] = 0;
                 SetTile(zielSpalte, zielZeile, 6);

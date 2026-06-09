@@ -191,7 +191,7 @@ namespace Test_2D_RPG
             base.Update(gameTime);
         }
 
-        // prueft ob der Spieler den Rand erreicht hat und wechselt die Karte
+        // prüft ob der Spieler den Rand erreicht hat und wechselt die Karte
         private void KarteWechseln()
         {
             if (spieler.Position.X + 32 > 512 && aktuelleMap.East != null)
